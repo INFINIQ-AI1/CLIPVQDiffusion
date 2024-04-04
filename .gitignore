@@ -1,0 +1,8 @@
+*.pyc
+src/*
+test*
+result*
+checkpoints*
+OUTPUT/pretrained_model/taming_dvae/*.ckpt
+result/*
+*.pt

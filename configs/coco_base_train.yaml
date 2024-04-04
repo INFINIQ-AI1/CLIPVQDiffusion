@@ -1,0 +1,154 @@
+model:
+  target: image_synthesis.modeling.models.clip_vqdiffusion.CLIPVQDiffusion
+  params:
+    content_info: {key: image}
+    condition_info_train: {key: image}
+    condition_info_valid: {key: text}                                  
+    use_lafite: True
+    lafite_alpha: 0.25
+    lafite_norm: True
+    times: 1
+    truncation_r: 0.85 
+    content_codec_config: 
+      target: image_synthesis.modeling.codecs.image_codec.taming_gumbel_vqvae.TamingGumbelVQVAE
+      params:
+        trainable: False
+        token_shape: [16, 16]
+        config_path: OUTPUT/pretrained_model/taming_dvae/taming_f16_4096_coco.yaml
+        ckpt_path: OUTPUT/pretrained_model/taming_dvae/coco_vqgan_99epoch.ckpt
+        num_tokens: 4096
+        quantize_number: 0
+    condition_codec_config:
+      # clip image embedding 
+      target: image_synthesis.modeling.codecs.image_codec.clip_emb_codec.NormalClipAdapter
+      params:
+        model: 'ViT-B/32'
+        device: 'cpu'
+        normalize: True 
+    diffusion_config:      
+    # target: image_synthesis.modeling.transformers.gpt_like_transformer.GPTLikeTransformer
+      target: image_synthesis.modeling.transformers.diffusion_transformer.DiffusionTransformer
+      params:
+        diffusion_step: 100
+        alpha_init_type: 'alpha1'       # init_type = fix or cos or linear 
+        auxiliary_loss_weight: 5.0e-4
+        adaptive_auxiliary_loss: True
+        mask_weight: [1, 1]    # the loss weight on mask region and non-mask region
+
+        transformer_config:
+          target: image_synthesis.modeling.transformers.transformer_utils.Condition2ImageTransformer
+          params:
+            class_type: adalayerclip 
+            attn_type: selfcondition
+            n_layer: 24
+            n_embd: 512 # the dim of embedding dims
+            n_head: 16 
+            # condition_seq_len: 77    ###### 77 for clip and 256 for dalle
+            content_seq_len: 256
+            content_spatial_size: [16,16]
+            attn_pdrop: 0.0
+            resid_pdrop: 0.0
+            block_activate: GELU2
+            timestep_type: adalayernorm    # adainsnorm or adalayernorm and abs
+            mlp_hidden_times: 4
+            mlp_type: conv_mlp
+
+        content_emb_config:
+          target: image_synthesis.modeling.embeddings.dalle_mask_image_embedding.DalleMaskImageEmbedding
+          params:
+            num_embed: 4096
+            spatial_size: !!python/tuple [16,16]
+            embed_dim: 512
+            trainable: True
+            pos_emb_type: embedding
+
+solver:
+  base_lr: 3.0e-6
+  adjust_lr: none # not adjust lr according to total batch_size
+  max_epochs: 500
+  save_epochs: 2
+  validation_epochs: 1
+  sample_iterations: 10000  # epoch #30000      # how many iterations to perform sampling once ?
+  print_specific_things: True
+  scheduler_valid: True # scheduler update using validation epoch or not 
+
+  # config for ema
+  ema:
+    decay: 0.99
+    update_interval: 25
+    device: cpu
+
+  clip_grad_norm:
+    target: image_synthesis.engine.clip_grad_norm.ClipGradNorm
+    params:
+      start_iteration: 0
+      end_iteration: 5000
+      max_norm: 0.5
+  optimizers_and_schedulers: # a list of configures, so we can config several optimizers and schedulers
+  - name: none # default is None
+    optimizer:
+      target: torch.optim.AdamW
+      params: 
+        betas: !!python/tuple [0.9, 0.96]
+        weight_decay: 4.5e-2
+    scheduler:
+      step_iteration: 1
+      target: image_synthesis.engine.lr_scheduler.ReduceLROnPlateauWithWarmup
+      params:
+        factor: 0.5
+        patience: 5
+        cooldown: 3
+        min_lr: 1.0e-7
+        threshold: 0.001
+        eps: 0.00000001
+        verbose: False 
+        threshold_mode: abs
+        mode: max 
+        warmup_lr: 1.5e-5 # the lr to be touched after warmup
+        warmup: 30000
+
+dataloader:
+  data_root: # data root path
+  batch_size: 16
+  num_workers: 8
+  train_datasets: # a list of configures, so we can combine several schedulers
+    - target: image_synthesis.data.mscoco_dataset.CocoConcatDataset
+      params:
+        data_root: # data root path
+        phase_first: train
+        drop_caption_rate_first: 0.0
+        im_preprocessor_config_first:
+          target: image_synthesis.data.utils.image_preprocessor.DalleTransformerPreprocessor   # ImageNet
+          params:
+            size: 256
+            phase: train
+        phase_second: val
+        drop_caption_rate_second: 0.0
+        im_preprocessor_config_second:
+          target: image_synthesis.data.utils.image_preprocessor.DalleTransformerPreprocessor   # ImageNet
+          params:
+            size: 256
+            phase: train
+  validation_datasets:
+    - target: image_synthesis.data.mscoco_dataset.CocoDataset
+      params:
+        data_root: # data root path
+        phase: val
+        im_preprocessor_config:
+          target: image_synthesis.data.utils.image_preprocessor.DalleTransformerPreprocessor
+          params:
+            size: 256
+            phase: val
+        tokenize_config:
+          target: image_synthesis.modeling.codecs.text_codec.tokenize.Tokenize
+          params:
+            context_length: 77     ############# 77 for clip and 256 for dalle
+            add_start_and_end: True
+            with_mask: True
+            pad_value: 0 # 0 for clip embedding and -100 for others
+            clip_embedding: False     ############################   if we use clip embedding 
+            tokenizer_config:
+              target: image_synthesis.modeling.modules.clip.simple_tokenizer.SimpleTokenizer   #########
+              params:
+                end_idx: 49152  
+
