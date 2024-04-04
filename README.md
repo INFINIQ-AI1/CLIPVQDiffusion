@@ -15,12 +15,12 @@ CLIP VQ Diffusion leverage pretrained CLIP model and Vector quantized diffusion 
 You can download pretrained model used in papers 
 
 pretrained visual quantizer  (Gumbel VQ-GAN)
-- [COCO](to be updated)
-- [FFHQ](to be updated) 
+- [COCO](/releases/latest/download/coco_vqgan_99epoch.ckpt)
+- [FFHQ](/releases/latest/download/ffhq_vqgan_99epoch.ckpt) 
 
 Diffusion model
-- [COCO](to be updated)
-- [FFHQ](to be updated)
+- [COCO](/releases/latest/download/clipvq_coco.ckpt)
+- [FFHQ](/releases/latest/download/clipvq_ffhq.ckpt)
 
 ## Data Preparations 
 
