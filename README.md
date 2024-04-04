@@ -22,6 +22,11 @@ Diffusion model
 - [COCO](https://github.com/INFINIQ-AI1/CLIPVQDiffusion/releases/download/v.0.1.0/clipvq_coco.pt)
 - [FFHQ](https://github.com/INFINIQ-AI1/CLIPVQDiffusion/releases/download/v.0.1.0/clipvq_ffhq.pt)
 
+place the pretrained VQ-GAN model to /OUTPUT/pretrained_model/taming_dvae/ \\
+place the pretrained diffusion model to /OUTPUT/pretrained_model/diffusion_models/ 
+
+
+
 ## Data Preparations 
 
 ### MS COCO 2014 Split 
