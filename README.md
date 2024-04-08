@@ -112,3 +112,5 @@ This code is based on [VQDiffusion](https://github.com/microsoft/VQ-Diffusion) a
 Appreciate for sharing code. 
 
 ## License 
+
+This project is licensed under the license in the root directory. 
