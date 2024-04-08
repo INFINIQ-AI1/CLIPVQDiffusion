@@ -9,6 +9,13 @@ This is official repository of paper [CLIP-VQDiffusion](https://arxiv.org/abs/24
 CLIP VQ Diffusion leverage pretrained CLIP model and Vector quantized diffusion model to generate image in langauge free training setup, and achieved competative performance in FFHQ and COCO datasets.
 
 ## Requirements 
+```
+# python 3.8, cuda 11.2 
+
+pip install -r requirements 
+
+pip install git+https://github.com/openai/CLIP.git
+```
 
 ## Pretrained-models 
 
